@@ -40,7 +40,8 @@ def raiz():
 @app.get("/Alan")
 def Alan():
     return {
-        "nome": "Alan Beck Guimarães"
+        "nome": "Alan Beck Guimarães"\
+        "versao: 2"
         
     }
 
