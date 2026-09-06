@@ -37,12 +37,10 @@ def raiz():
     """Verificação de saúde: útil para saber se o container está no ar."""
     return {"status": "ok", "servico": "api-de-sentimento", "aula": 1}
 
-@app.get("/Alan")
-def Alan():
+@app.get("/sobre")
+def sobre():
     return {
-        "nome": "Alan Beck Guimarães"\
-        "versao: 2"
-        
+        "dupla": ["Alan Beck Guimarães"]
     }
 
 @app.post("/prediz", response_model=Saida)
