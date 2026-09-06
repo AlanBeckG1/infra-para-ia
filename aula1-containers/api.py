@@ -40,7 +40,7 @@ def raiz():
 @app.get("/sobre")
 def sobre():
     return {
-        "dupla": ["Alan Beck Guimarães"]
+        "integrantes": ["Alan Beck Guimarães"]
     }
 
 @app.post("/prediz", response_model=Saida)
