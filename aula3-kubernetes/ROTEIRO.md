@@ -6,7 +6,7 @@ Na Aula 2 você colocou um pod no ar e viu que, ao apagá-lo, ninguém o trouxe 
 |---|---|
 | **Tempo** | 2h em aula, em dupla. As etapas 1 a 4 são as mesmas da Aula 2 e devem sair em 25 minutos; o conteúdo novo começa na Etapa 5. Refazendo em casa: cerca de 50 minutos. |
 | **Pré-requisitos** | Conta gratuita do Azure ativa e a prática da Aula 2 feita: o cluster daquela aula foi apagado na faxina, então hoje criamos um novo. |
-| **Custo** | Cerca de US$ 0,25. |
+| **Custo** | Cerca de US$ 0,35. |
 
 **Como ler as etapas:** PORTAL acontece clicando em [portal.azure.com](https://portal.azure.com). TERMINAL acontece no Cloud Shell (Bash), dentro do próprio portal. NAVEGADOR acontece em uma aba nova, no IP público da API.
 
@@ -30,7 +30,7 @@ Assinatura
 ├── Resource group aula3-rg                      ← criado por você
 │   └── Cluster AKS aks-aula3                    control plane no tier Free: sem custo
 └── Resource group MC_aula3-rg_aks-aula3_eastus  ← criado pelo AKS, sozinho
-    ├── VM do nó · Standard_B2s · ~US$ 0,05/h
+    ├── VM do nó · Standard_D2as_v7 · ~US$ 0,10/h
     ├── Load Balancer + IP público
     └── Disco e rede virtual do nó
 ```
@@ -90,12 +90,12 @@ az aks create \
   --name aks-aula3 \
   --location eastus \
   --node-count 1 \
-  --node-vm-size Standard_B2s \
+  --node-vm-size Standard_D2as_v7 \
   --tier free \
   --generate-ssh-keys
 ```
 
-As flags são as mesmas da Aula 2: um nó Standard_B2s (2 vCPU, 4 GB) com o control plane no tier Free. Hoje esse único nó vai abrigar três réplicas da API, e é por isso que o manifesto declara `requests` pequenos.
+As flags são as mesmas da Aula 2: um nó Standard_D2as_v7 (2 vCPU, 8 GB) com o control plane no tier Free. Hoje esse único nó vai abrigar três réplicas da API, e é por isso que o manifesto declara `requests` pequenos.
 
 > **Enquanto o cluster sobe.** Não fique olhando o terminal: use os 5 a 10 minutos para ler o manifesto de hoje, que é bem maior que o da aula passada. **Não edite nada agora:** a versão inicial é `v2` de propósito.
 >
@@ -182,7 +182,7 @@ kubectl apply -f manifests/service.yaml
 kubectl get svc sentiment-api -w      # até EXTERNAL-IP sair de <pending>
 IP=$(kubectl get svc sentiment-api -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 for i in $(seq 1 6); do curl -s http://$IP/hostname; echo; done
-kubectl get endpoints sentiment-api
+kubectl get endpoints sentiment-api   # como na Aula 2, ignore o Warning de deprecação do Endpoints
 ```
 
 Saída esperada (resumida):
@@ -229,7 +229,7 @@ Liveness:   http-get http://:8000/health delay=15s period=10s #failure=3
 
 > **Por quê.** A coluna READY mostra `0/1` por alguns segundos mesmo com o pod já em `Running`: o container subiu, mas ainda não respondeu 200 em `/health`. Enquanto isso o Service não manda tráfego para ele. É esse detalhe que evita o erro clássico de servir requisições para um modelo que ainda está carregando, e é ele que faz o rolling update da Etapa 9 acontecer sem nenhuma falha. A liveness é outra coisa: se `/health` parar de responder três vezes seguidas, o container é reiniciado, não apenas tirado do tráfego.
 
-**Volte para três réplicas antes de seguir.** Com um nó B2s e requests de 100m de CPU por pod, cinco réplicas cabem, mas o rolling update da próxima etapa precisa de folga para criar um pod extra.
+**Volte para três réplicas antes de seguir.** Com um nó D2as_v7 e requests de 100m de CPU por pod, cinco réplicas cabem, mas o rolling update da próxima etapa precisa de folga para criar um pod extra.
 
 *Experimento opcional:* escale para `--replicas=30`. Alguns pods ficam em `Pending`: o `describe` dirá `Insufficient cpu`. Escalar pods não cria máquina. Volte para 3 depois.
 
@@ -314,7 +314,7 @@ Pergunta para a dupla: se a v3 nunca ficasse pronta (readiness falhando), o que 
 az group delete --name aula3-rg --yes --no-wait
 ```
 
-Confira depois de alguns minutos que sumiram os dois grupos: `aula3-rg` e o `MC_aula3-rg_aks-aula3_eastus`. Em **Cost Management** → **Cost analysis** o consumo aparece com atraso de algumas horas até um dia; o esperado hoje é algo em torno de US$ 0,25, um pouco mais que a Aula 2, porque o cluster ficou de pé por mais tempo.
+Confira depois de 5 a 15 minutos (o `MC_...` sai primeiro; o `aula3-rg` pode levar mais de 10 minutos) que sumiram os dois grupos: `aula3-rg` e o `MC_aula3-rg_aks-aula3_eastus`. Em **Cost Management** → **Cost analysis** o consumo aparece com atraso de algumas horas até um dia; o esperado hoje é algo em torno de US$ 0,35, um pouco mais que a Aula 2, porque o cluster ficou de pé por mais tempo.
 
 Se você quiser pausar em vez de destruir (para continuar em casa no mesmo dia), `az aks stop -g aula3-rg -n aks-aula3` desliga o nó e para a maior parte do custo, mas o IP público continua reservado.
 
@@ -352,7 +352,7 @@ Ordem de investigação, sempre: `get` para ver o estado, `describe` para ler os
 | O Deployment não cria pod nenhum | `kubectl describe deploy sentiment-api` | `selector` diferente das labels do `template`. O YAML é recusado na hora do `apply`: as duas listas precisam bater. |
 | `/hostname` devolve sempre o mesmo pod | `kubectl get endpoints sentiment-api` | Só um IP na lista: os outros pods não estão prontos (READY 0/1) ou não têm a label do selector. |
 | EXTERNAL-IP `<pending>` por mais de 3 min | `kubectl describe svc sentiment-api` | Cota de IP público ou provisionamento lento. Alternativa: `kubectl port-forward svc/sentiment-api 8080:80`. |
-| `az aks create` falha com `QuotaExceeded` | `az vm list-usage --location eastus -o table` | Cota de vCPU da conta gratuita. Tente `Standard_B2s_v2` ou `Standard_D2s_v3`; se persistir, avise o professor. |
+| `az aks create` falha com `VM size ... is not allowed in your subscription` | leia a lista de tamanhos no próprio erro; `az vm list-usage --location eastus -o table` mostra as cotas | A conta gratuita só libera alguns tamanhos por região. Escolha um `standard_d2..._v7` da lista, por exemplo `Standard_D2as_v7` ou `Standard_D2s_v7`. Se persistir, avise o professor. |
 | A variável `$IP` sumiu | `IP=$(kubectl get svc sentiment-api -o jsonpath='{.status.loadBalancer.ingress[0].ip}')` | Cada aba do Cloud Shell tem suas próprias variáveis, e elas se perdem ao reconectar. Redefina na aba nova. |
 
 ---
