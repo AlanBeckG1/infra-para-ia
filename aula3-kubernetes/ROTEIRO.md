@@ -4,7 +4,7 @@ Na Aula 2 você colocou um pod no ar e viu que, ao apagá-lo, ninguém o trouxe 
 
 | | |
 |---|---|
-| **Tempo** | 2h em aula, em dupla. As etapas 1 a 4 são as mesmas da Aula 2 e devem sair em 25 minutos; o conteúdo novo começa na Etapa 5. Refazendo em casa: cerca de 50 minutos. |
+| **Tempo** | 2h em aula, em dupla. As etapas 1 a 4 são as mesmas da Aula 2 e o conteúdo novo começa na Etapa 5. Refazendo em casa: cerca de 50 minutos. |
 | **Pré-requisitos** | Conta gratuita do Azure ativa e a prática da Aula 2 feita: o cluster daquela aula foi apagado na faxina, então hoje criamos um novo. |
 | **Custo** | Cerca de US$ 0,35. |
 
@@ -37,11 +37,11 @@ Assinatura
 
 ---
 
-## Parte 1 — Preparar o ambiente (~25 min)
+## Parte 1 — Preparar o ambiente
 
 Quatro etapas idênticas às da Aula 2, trocando `aula2` por `aula3` em todos os nomes. Se algo travar aqui, a tabela de [erros comuns](#erros-comuns) cobre os casos conhecidos.
 
-### Etapa 1 — Criar o resource group `aula3-rg` · PORTAL · ~5 min
+### Etapa 1 — Criar o resource group `aula3-rg` · PORTAL
 
 Busque **Resource groups** no topo do portal → **+ Create** → nome `aula3-rg`, região **(US) East US** → **Review + create** → **Create**. O grupo da Aula 2 foi apagado na faxina; este é novo e some do mesmo jeito no fim de hoje.
 
@@ -51,7 +51,7 @@ Pela linha de comando é mais rápido, e é uma pista do que vem na Aula 4:
 az group create --name aula3-rg --location eastus
 ```
 
-### Etapa 2 — Abrir o Cloud Shell · PORTAL + TERMINAL · ~5 min
+### Etapa 2 — Abrir o Cloud Shell · PORTAL + TERMINAL
 
 Ícone **`>_`** na barra do topo → **Bash**. Os providers já foram registrados na Aula 2 e o registro vale para a assinatura inteira, para sempre: hoje basta conferir.
 
@@ -62,7 +62,7 @@ az provider show --namespace Microsoft.ContainerService --query registrationStat
 
 A resposta esperada é `Registered`. Se vier `NotRegistered`, rode `az provider register --namespace Microsoft.ContainerService` e siga adiante enquanto ele processa.
 
-### Etapa 3 — Clonar o repositório · TERMINAL · ~5 min
+### Etapa 3 — Clonar o repositório · TERMINAL
 
 ```bash
 git clone https://github.com/rodolfo-s-antunes/infra-para-ia.git
@@ -80,9 +80,9 @@ Se o Cloud Shell tiver storage, a pasta da Aula 2 ainda está aí: nesse caso o 
 
 ---
 
-## Parte 2 — Criar o cluster (~15 min, com espera produtiva)
+## Parte 2 — Criar o cluster
 
-### Etapa 4 — Criar o cluster AKS · TERMINAL · comando: 2 min, espera: 5 a 10 min
+### Etapa 4 — Criar o cluster AKS · TERMINAL
 
 ```bash
 az aks create \
@@ -111,9 +111,9 @@ As flags são as mesmas da Aula 2: um nó Standard_D2as_v7 (2 vCPU, 8 GB) com o 
 
 ---
 
-## Parte 3 — Réplicas que se cuidam sozinhas (~40 min)
+## Parte 3 — Réplicas que se cuidam sozinhas
 
-### Etapa 5 — Conectar e aplicar o Deployment · TERMINAL · ~15 min
+### Etapa 5 — Conectar e aplicar o Deployment · TERMINAL
 
 ```bash
 az aks get-credentials --resource-group aula3-rg --name aks-aula3
@@ -151,7 +151,7 @@ estratégia de update              label e este molde"              pod …-tn4r
 
 O loop de reconciliação roda no ReplicaSet: ele conta pods com a label, compara com `replicas: 3` e cria ou apaga a diferença. Para sempre.
 
-### Etapa 6 — Ver a auto-recuperação acontecer · TERMINAL · ~10 min
+### Etapa 6 — Ver a auto-recuperação acontecer · TERMINAL
 
 ```bash
 POD=$(kubectl get pods -l app=sentiment-api -o jsonpath='{.items[0].metadata.name}')
@@ -175,7 +175,7 @@ Em segundos existe um pod novo, com nome novo, no lugar do que você apagou. Com
 
 **Cronometrem:** quantos segundos levou? Esse número é o tempo de recuperação da sua aplicação, e depende do tamanho da imagem.
 
-### Etapa 7 — Service e load balancing · TERMINAL · ~15 min
+### Etapa 7 — Service e load balancing · TERMINAL
 
 ```bash
 kubectl apply -f manifests/service.yaml
@@ -207,7 +207,7 @@ porta 80                  port 80 → targetPort 8000         pod …-tn4rp :800
 
 O mesmo `service.yaml` da Aula 2, sem alteração nenhuma: o selector agora casa com três pods em vez de um, e o Service passa a ser um balanceador. A lista de endpoints é viva: pod que morre sai dela, pod que fica pronto entra.
 
-### Etapa 8 — Readiness e escala · TERMINAL · ~10 min
+### Etapa 8 — Readiness e escala · TERMINAL
 
 ```bash
 kubectl describe pod -l app=sentiment-api | grep -E "Readiness|Liveness"
@@ -237,9 +237,9 @@ O `scale` é um atalho imperativo: o arquivo continua dizendo 3. Em produção, 
 
 ---
 
-## Parte 4 — Trocar a versão sem parar (~25 min)
+## Parte 4 — Trocar a versão sem parar
 
-### Etapa 9 — Rolling update v2 → v3 · TERMINAL · ~15 min
+### Etapa 9 — Rolling update v2 → v3 · TERMINAL
 
 Esta etapa fica melhor a quatro mãos. Uma pessoa da dupla abre uma **segunda aba do Cloud Shell** e deixa a API sob fogo contínuo:
 
@@ -286,7 +286,7 @@ O rolling update em quatro quadros:
 
 Com `maxSurge: 1` e `maxUnavailable: 0`, nunca há menos de 3 pods prontos. Nenhuma janela de manutenção, nenhuma requisição perdida.
 
-### Etapa 10 — Rollback · TERMINAL · ~10 min
+### Etapa 10 — Rollback · TERMINAL
 
 ```bash
 kubectl rollout undo deployment/sentiment-api
@@ -304,9 +304,9 @@ Pergunta para a dupla: se a v3 nunca ficasse pronta (readiness falhando), o que 
 
 ---
 
-## Parte 5 — Custo e faxina (~10 min)
+## Parte 5 — Custo e faxina
 
-### Etapa 11 — Apagar tudo · TERMINAL + PORTAL · ~5 min
+### Etapa 11 — Apagar tudo · TERMINAL + PORTAL
 
 **Não saia da aula sem fazer esta etapa.** Colete antes as capturas que a [atividade da semana](ATIVIDADE.md) pede: depois do delete não há como recuperar o histórico de rollout nem o IP público.
 

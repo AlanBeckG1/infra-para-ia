@@ -4,7 +4,7 @@ Da assinatura vazia até a API de sentimento respondendo em um IP público, dent
 
 | | |
 |---|---|
-| **Tempo** | 2h em aula, em dupla. O `az aks create` sozinho leva de 5 a 10 minutos, e a Etapa 5 existe para ocupar essa espera. Em casa, com o caminho conhecido, sai em cerca de 40 minutos. |
+| **Tempo** | 2h em aula, em dupla. A Etapa 5 existe para ocupar a espera do `az aks create`. Em casa, com o caminho conhecido, sai em cerca de 40 minutos. |
 | **Pré-requisitos** | Conta gratuita do Azure ativa (a mesma da Aula 1), navegador e a URL deste repositório. Nada para instalar: tudo roda no Cloud Shell. |
 | **Custo** | Cerca de US$ 0,30. |
 
@@ -39,11 +39,11 @@ Você cria um resource group; o AKS cria o segundo. Apagar `aula2-rg` no fim rem
 
 ---
 
-## Parte 1 — Preparar o ambiente (~15 min)
+## Parte 1 — Preparar o ambiente
 
 Três etapas curtas que criam a pasta do exercício, abrem o terminal e trazem os arquivos. Idênticas nas duas aulas de Kubernetes.
 
-### Etapa 1 — Criar o resource group `aula2-rg` · PORTAL · ~5 min
+### Etapa 1 — Criar o resource group `aula2-rg` · PORTAL
 
 1. No portal, use a barra de busca do topo: digite **Resource groups** (Grupos de recursos) e abra o serviço.
 2. Clique em **+ Create** (Criar).
@@ -52,7 +52,7 @@ Três etapas curtas que criam a pasta do exercício, abrem o terminal e trazem o
 
 > **Por quê.** Todo recurso do Azure vive dentro de um resource group. Como tudo o que você criar hoje fica nesta pasta, a limpeza final é um comando só, e o risco de esquecer um recurso ligado consumindo crédito cai para quase zero. A região precisa ser a mesma do cluster: `eastus` é a que tem mais cota disponível em contas gratuitas.
 
-### Etapa 2 — Abrir o Cloud Shell e registrar os providers · PORTAL + TERMINAL · ~5 min
+### Etapa 2 — Abrir o Cloud Shell e registrar os providers · PORTAL + TERMINAL
 
 1. Clique no ícone **`>_`** na barra superior do portal e escolha **Bash** (não PowerShell).
 2. Se ele perguntar sobre armazenamento, escolha **No storage account required** (efêmero) com a sua assinatura; se essa opção não aparecer, aceite o storage padrão.
@@ -75,7 +75,7 @@ az provider show --namespace Microsoft.ContainerService --query registrationStat
 
 O Cloud Shell já vem com `az`, `git` e `kubectl` instalados. Depois de ~20 min de inatividade ele desconecta: basta clicar em **Reconnect**.
 
-### Etapa 3 — Clonar o repositório · TERMINAL · ~5 min
+### Etapa 3 — Clonar o repositório · TERMINAL
 
 ```bash
 git clone https://github.com/rodolfo-s-antunes/infra-para-ia.git
@@ -93,9 +93,9 @@ São os dois manifestos da prática (`pod.yaml` e `service.yaml`) mais um exempl
 
 ---
 
-## Parte 2 — Criar o cluster (~15 min, com espera produtiva)
+## Parte 2 — Criar o cluster
 
-### Etapa 4 — Criar o cluster AKS · TERMINAL · comando: 2 min, espera: 5 a 10 min
+### Etapa 4 — Criar o cluster AKS · TERMINAL
 
 ```bash
 az aks create \
@@ -125,7 +125,7 @@ Se o comando falhar em segundos com `The VM size of ... is not allowed in your s
 > az aks show -g aula2-rg -n aks-aula2 --query provisioningState -o tsv
 > ```
 
-### Etapa 5 — Ler e editar o manifesto do Pod · TERMINAL · ~10 min, durante a espera
+### Etapa 5 — Ler e editar o manifesto do Pod · TERMINAL
 
 ```bash
 cat manifests/pod.yaml
@@ -146,7 +146,7 @@ Perguntas para a dupla:
 
 O [Anexo B](#anexo-b--os-manifestos-linha-a-linha) traz este arquivo comentado linha a linha. Indentação em YAML é significativa: use espaços, nunca tabs.
 
-### Etapa 6 — Conectar o kubectl ao cluster · TERMINAL · ~5 min
+### Etapa 6 — Conectar o kubectl ao cluster · TERMINAL
 
 ```bash
 az aks get-credentials --resource-group aula2-rg --name aks-aula2
@@ -169,9 +169,9 @@ aks-nodepool1-xxxxxxxx-vmss000000   Ready    <none>   3m    v1.3x.x
 
 ---
 
-## Parte 3 — Colocar a API no ar (~45 min)
+## Parte 3 — Colocar a API no ar
 
-### Etapa 7 — Criar o Pod e observar · TERMINAL · ~15 min
+### Etapa 7 — Criar o Pod e observar · TERMINAL
 
 ```bash
 kubectl apply -f manifests/pod.yaml
@@ -199,7 +199,7 @@ Leia a seção **Events** do `describe` de cima para baixo: ela é o cluster con
 
 **Confira no portal:** abra o cluster → **Kubernetes resources** → **Workloads** → aba **Pods**. O `sentiment-api` aparece lá com o mesmo STATUS que o terminal mostrou. Clicando nele, a aba **YAML** mostra o seu manifesto acrescido de dezenas de campos que o cluster preencheu sozinho.
 
-### Etapa 8 — Expor a API com um Service LoadBalancer · TERMINAL · ~15 min
+### Etapa 8 — Expor a API com um Service LoadBalancer · TERMINAL
 
 ```bash
 cat manifests/service.yaml
@@ -233,7 +233,7 @@ porta 80                  port: 80 → targetPort: 8000        app: sentiment-ap
 
 O Service não conhece o pod pelo nome nem pelo IP: ele procura, a cada instante, quem tem a label `app: sentiment-api`. Label igual ao selector, tráfego chega. Diferente, silêncio.
 
-### Etapa 9 — Testar a API · TERMINAL + NAVEGADOR · ~10 min
+### Etapa 9 — Testar a API · TERMINAL + NAVEGADOR
 
 ```bash
 IP=$(kubectl get svc sentiment-api -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
@@ -257,7 +257,7 @@ No navegador, abra `http://SEU-IP/docs` (atenção: `http://`, sem o "s"). A int
 
 Vale gastar dois minutos testando os limites do modelo, como na Aula 1: uma frase negativa, uma frase irônica ("que maravilha, atrasou de novo") e uma em inglês. O `/hostname` hoje responde sempre o mesmo nome, porque existe um pod só. Na Aula 3 ele passa a ser a prova visual do load balancing.
 
-### Etapa 10 — Apagar o pod e ver o que acontece · TERMINAL · ~5 min
+### Etapa 10 — Apagar o pod e ver o que acontece · TERMINAL
 
 ```bash
 kubectl delete pod sentiment-api
@@ -273,9 +273,9 @@ Discussão na dupla, para guardar até a próxima aula: que objeto deveria ter r
 
 ---
 
-## Parte 4 — Custo e faxina (~10 min)
+## Parte 4 — Custo e faxina
 
-### Etapa 11 — Apagar tudo · TERMINAL + PORTAL · ~5 min
+### Etapa 11 — Apagar tudo · TERMINAL + PORTAL
 
 **Não saia da aula sem fazer esta etapa.** Um cluster esquecido ligado consome cerca de US$ 2,50 por dia do seu crédito, e o IP público continua reservado. Antes de apagar, colete as capturas de tela que a [atividade da semana](ATIVIDADE.md) pede.
 
