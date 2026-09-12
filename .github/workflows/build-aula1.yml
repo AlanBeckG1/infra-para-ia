@@ -50,5 +50,10 @@ jobs:
           sbom: false
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/sentiment-api:v1
+
             ghcr.io/${{ env.OWNER_LC }}/sentiment-api:v2
             ghcr.io/${{ env.OWNER_LC }}/sentiment-api:latest
+
+            ghcr.io/${{ env.OWNER_LC }}/sentiment-api:latest
+
+
